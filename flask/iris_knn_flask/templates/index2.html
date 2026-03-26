@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iris Classifier</title>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: rgba(255, 255, 255, 0.9);
+            --text: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --primary: #2563eb;
+            --primary-soft: #dbeafe;
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            --radius: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top left, #eff6ff 0%, transparent 30%),
+                radial-gradient(circle at top right, #f1f5f9 0%, transparent 28%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+        }
+
+        .shell {
+            width: 100%;
+            max-width: 960px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+        }
+
+        .panel,
+        .result-panel {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.7);
+            box-shadow: var(--shadow);
+            border-radius: var(--radius);
+            padding: 32px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: 32px;
+            line-height: 1.15;
+            margin: 0 0 10px;
+            letter-spacing: -0.02em;
+        }
+
+        .sub {
+            margin: 0 0 28px;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        form {
+            display: grid;
+            gap: 18px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .field input {
+            width: 100%;
+            border: 1px solid var(--line);
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 15px;
+            color: var(--text);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s, transform .2s;
+        }
+
+        .field input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        button {
+            margin-top: 8px;
+            border: 0;
+            background: var(--text);
+            color: #fff;
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .15s ease, opacity .2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            opacity: 0.95;
+        }
+
+        .result-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .result-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .prediction {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin: 0 0 18px;
+        }
+
+        .preview {
+            width: 100%;
+            min-height: 260px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .meta {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+            display: grid;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .meta strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        @media (max-width: 860px) {
+            .shell {
+                grid-template-columns: 1fr;
+            }
+
+            .panel,
+            .result-panel {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <section class="panel">
+            <div class="eyebrow">Iris Classification</div>
+            <h1>붓꽃 품종 예측</h1>
+            <p class="sub">
+                네 가지 측정값을 입력하면 학습된 KNN 모델이 품종을 예측합니다.
+                숫자는 iris 데이터 범위 근처로 입력하는 것이 좋습니다.
+            </p>
+
+            <form method="post">
+                <div class="field">
+                    <label for="sepal_length">Sepal Length</label>
+                    <input type="number" step="0.01" name="sepal_length" id="sepal_length" required>
+                    <div class="hint">권장 범위: 4.3 ~ 7.9 cm</div>
+                </div>
+
+                <div class="field">
+                    <label for="sepal_width">Sepal Width</label>
+                    <input type="number" step="0.01" name="sepal_width" id="sepal_width" required>
+                    <div class="hint">권장 범위: 2.0 ~ 4.4 cm</div>
+                </div>
+
+                <div class="field">
+                    <label for="petal_length">Petal Length</label>
+                    <input type="number" step="0.01" name="petal_length" id="petal_length" required>
+                    <div class="hint">권장 범위: 1.0 ~ 6.9 cm</div>
+                </div>
+
+                <div class="field">
+                    <label for="petal_width">Petal Width</label>
+                    <input type="number" step="0.01" name="petal_width" id="petal_width" required>
+                    <div class="hint">권장 범위: 0.1 ~ 2.5 cm</div>
+                </div>
+
+                <button type="submit">예측 실행</button>
+            </form>
+        </section>
+
+        <aside class="result-panel">
+            <div>
+                <div class="result-title">Prediction Result</div>
+                <p class="prediction">
+                    {% if prediction %}
+                        {{ prediction }}
+                    {% else %}
+                        아직 예측 전
+                    {% endif %}
+                </p>
+
+                <div class="preview">
+                    {% if image_file %}
+                        <img src="{{ url_for('static', filename=image_file) }}" alt="{{ prediction }}">
+                    {% else %}
+                        <div class="empty">
+                            입력값을 제출하면<br>
+                            여기에서 예측 결과와 이미지를 확인할 수 있습니다.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="meta">
+                <div><strong>Sepal Length:</strong> {{ request.form.get('sepal_length', '-') }} cm</div>
+                <div><strong>Sepal Width:</strong> {{ request.form.get('sepal_width', '-') }} cm</div>
+                <div><strong>Petal Length:</strong> {{ request.form.get('petal_length', '-') }} cm</div>
+                <div><strong>Petal Width:</strong> {{ request.form.get('petal_width', '-') }} cm</div>
+            </div>
+        </aside>
+    </div>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Iris KNN 분류기</title>
+        <style>
+            body {
+                font-family: 'Noto Sans KR', 'Malgun Gothic', Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background: #f4f6fa;
+                min-height: 100vh;
+            }
+            .header {
+                background: #23408e;
+                color: #fff;
+                padding: 24px 0 18px 0;
+                border-bottom: 4px solid #1a2c5b;
+                text-align: center;
+                margin-bottom: 0;
+            }
+            .header .logo {
+                display: inline-block;
+                vertical-align: middle;
+                margin-right: 12px;
+                width: 38px;
+                height: 38px;
+                background: #fff;
+                border-radius: 50%;
+                box-shadow: 0 2px 8px #12336622;
+                background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/6e/Emblem_of_South_Korea.svg');
+                background-size: 70% 70%;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+            .header .title {
+                display: inline-block;
+                font-size: 1.45em;
+                font-weight: 700;
+                letter-spacing: 1px;
+                vertical-align: middle;
+            }
+            .container {
+                max-width: 540px;
+                margin: 36px auto 0 auto;
+                background: #fff;
+                border-radius: 10px;
+                box-shadow: 0 2px 12px #23408e22;
+                padding: 32px 28px 24px 28px;
+                border: 1.5px solid #e3e7f0;
+            }
+            h1 {
+                display: none;
+            }
+            form {
+                margin-bottom: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            label {
+                display: inline-block;
+                width: 130px;
+                color: #23408e;
+                font-weight: 500;
+            }
+            input[type="number"] {
+                border: 1px solid #b0b8c9;
+                border-radius: 5px;
+                padding: 7px 10px;
+                font-size: 1em;
+                width: 180px;
+                margin-left: 8px;
+                background: #fafdff;
+                transition: border 0.2s;
+            }
+            input[type="number"]:focus {
+                border: 1.5px solid #23408e;
+                outline: none;
+            }
+            button[type="submit"] {
+                margin-top: 10px;
+                background: #23408e;
+                color: #fff;
+                border: none;
+                border-radius: 7px;
+                padding: 10px 0;
+                font-size: 1.08em;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 2px 8px #23408e22;
+                transition: background 0.2s, box-shadow 0.2s;
+            }
+            button[type="submit"]:hover {
+                background: #1a2c5b;
+                box-shadow: 0 4px 16px #23408e33;
+            }
+            .result-box {
+                background: #f6f8fc;
+                border-radius: 10px;
+                box-shadow: 0 2px 8px #23408e11;
+                padding: 22px 16px;
+                max-width: 500px;
+                margin: 32px auto 0 auto;
+                display: flex;
+                align-items: center;
+                gap: 28px;
+                border: 1.5px solid #b0b8c9;
+            }
+            .result-box img {
+                max-width: 110px;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px #23408e22;
+            }
+            .result-info h2 {
+                margin-top:0; margin-bottom: 10px; color: #23408e;
+                font-size: 1.13em;
+            }
+            .result-info {
+                font-size: 1.01em; color: #222;
+            }
+            .result-info b {
+                color: #23408e;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <span class="title">붓꼿 품종 KNN 예측</span>
+        </div>
+        <div class="container">
+            <form method="post">
+                <div>
+                    <label>Sepal Length:</label>
+                    <input type="number" step="0.01" name="sepal_length" required min="4.3" max="7.9"> <span style="color:#888; font-size:0.97em;">cm (4.3~7.9)</span>
+                </div>
+                <div>
+                    <label>Sepal Width:</label>
+                    <input type="number" step="0.01" name="sepal_width" required min="2.0" max="4.4"> <span style="color:#888; font-size:0.97em;">cm (2.0~4.4)</span>
+                </div>
+                <div>
+                    <label>Petal Length:</label>
+                    <input type="number" step="0.01" name="petal_length" required min="1.0" max="6.9"> <span style="color:#888; font-size:0.97em;">cm (1.0~6.9)</span>
+                </div>
+                <div>
+                    <label>Petal Width:</label>
+                    <input type="number" step="0.01" name="petal_width" required min="0.1" max="2.5"> <span style="color:#888; font-size:0.97em;">cm (0.1~2.5)</span>
+                </div>
+                <button type="submit">예측</button>
+            </form>
+            {% if prediction %}
+            <div class="result-box">
+                {% if image_file %}
+                    <img src="{{ url_for('static', filename=image_file) }}" alt="{{ prediction }}">
+                {% endif %}
+                <div class="result-info">
+                    <h2>예측 결과: {{ prediction }}</h2>
+                    <b>입력 정보</b><br>
+                    Sepal Length: {{ request.form['sepal_length'] if request.form.get('sepal_length') else '' }} cm<br>
+                    Sepal Width: {{ request.form['sepal_width'] if request.form.get('sepal_width') else '' }} cm<br>
+                    Petal Length: {{ request.form['petal_length'] if request.form.get('petal_length') else '' }} cm<br>
+                    Petal Width: {{ request.form['petal_width'] if request.form.get('petal_width') else '' }} cm<br>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </body>
+</html>
