@@ -77,11 +77,38 @@ def update_workflow(graph: dict, pos: str, neg: str, seed: int) -> dict:
     graph["3"]["inputs"]["seed"] = seed 
     return graph
 
+
+def get_all_history_images():
+    """/history API를 호출하여 모든 생성 기록의 이미지 URL 리스트 반환"""
+    try:
+        # 전체 히스토리 가져오기 
+        r = requests.get(f"{COMFY_URL}/history")
+        r.raise_for_status()
+        history = r.json()
+        
+        image_urls = []
+        # 최신 순으로 정렬하기 위해 역순으로 탐색하거나 처리할 수 있습니다.
+        for prompt_id in history:
+            history_block = history[prompt_id]
+            # 기존에 만든 이미지 추출 함수 재활용 [cite: 507, 522]
+            url = extract_first_image(history_block) 
+            if url:
+                image_urls.append(url)
+        return image_urls
+    except Exception as e:
+        print(f"Error fetching history: {e}")
+        return []
+
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     pos = request.form.get("pos", "a beautiful landscape with galaxy in a bottle")
     neg = request.form.get("neg", "text, watermark")
     img_url = ""
+    history_images = []
+    
+    show_history = request.args.get('history') == 'true'
 
     if request.method == 'POST':
         random_seed = random.randint(0, 112589906842624)
@@ -91,7 +118,18 @@ def index():
         history_block = poll_history(prompt_id)
         img_url = extract_first_image(history_block)
 
-    return render_template('image.html', pos=pos, neg=neg, img_url=img_url)
+    if show_history:
+        history_images = get_all_history_images()
+
+    return render_template('image.html', 
+                           pos=pos, neg=neg, 
+                           img_url=img_url, 
+                           history_images=history_images, 
+                           show_history=show_history)
+
+    # return render_template('image.html', pos=pos, neg=neg, img_url=img_url)
+
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,23 +1,302 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ComfyUI Minimal (Functions)</title>
-    
+    <title>ComfyUI | AI Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .nav-tabs-custom {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .nav-link:hover { color: var(--text-main); background: var(--card-bg); }
+        .nav-link.active { color: var(--text-main); background: var(--accent); }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .card-custom {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            height: 100%;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.6rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            color: var(--text-main);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            resize: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus { outline: none; border-color: var(--accent); }
+
+        .btn-generate {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-generate:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .result-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            background: var(--bg-color);
+            border: 2px dashed var(--border);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+        }
+
+        /* [개선] 에셋 통계 배지 스타일 */
+        .asset-stats {
+            background: var(--accent);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        /* [개선] 정렬 선택창 스타일 */
+        .sort-select {
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.4rem 1rem;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .history-item {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .history-item img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+        .history-info { padding: 1rem; text-align: center; }
+        .history-info span { color: var(--text-muted); font-size: 0.85rem; }
+
+        /* [추가] 모달 커스텀 스타일 */
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            overflow: hidden;
+        }
+        .modal-body { padding: 0; background-color: #000; display: flex; justify-content: center; }
+        .modal-img-full { max-width: 100%; max-height: 85vh; object-fit: contain; }
+        .modal-header { border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; }
+        .btn-close-white { filter: invert(1) grayscale(100%) brightness(200%); }
+    </style>
 </head>
 <body>
-    <h1>ComfyUI 프롬프트 -> 이미지</h1>
-    <form method = "post">
-        <label>Positive Prompt</label></br>
-        <textarea name="pos" row="3" cols="70">{{pos}}</textarea></br></br>
-        <label>Negative Prompt</label></br>
-        <textarea name="neg" row="3" cols="70">{{neg}}</textarea></br></br>
-        <button type="submit">Generate</button>
-    </form>
-    {% if img_url %}
-        <h2>Result</h2>
-        <img src="{{img_url}}" style="max-width:768px">
-    {% endif %}
+
+    <nav class="nav-tabs-custom">
+        <a href="/" class="nav-link {% if not show_history %}active{% endif %}">Studio</a>
+        <a href="/?history=true" class="nav-link {% if show_history %}active{% endif %}">Assets</a>
+    </nav>
+
+    <div class="main-container">
+        {% if not show_history %}
+            <div class="row g-4">
+                <div class="col-lg-5 col-xl-4">
+                    <div class="card-custom">
+                        <h3 class="mb-4">Configuration</h3>
+                        <form method="post">
+                            <label>Positive Prompt</label>
+                            <textarea name="pos" rows="6">{{pos}}</textarea>
+                            <label>Negative Prompt</label>
+                            <textarea name="neg" rows="3">{{neg}}</textarea>
+                            <button type="submit" class="btn-generate">Generate Masterpiece</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-7 col-xl-8">
+                    <div class="card-custom">
+                        <h3 class="mb-4">Live Preview</h3>
+                        <div class="result-wrapper">
+                            {% if img_url %}
+                                <img src="{{img_url}}" class="result-image">
+                            {% else %}
+                                <div class="placeholder-text text-center">
+                                    <p>프롬프트를 입력하고 버튼을 누르면<br>여기에 이미지가 생성됩니다.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <h2 class="m-0">Asset Gallery</h2>
+                    <span class="asset-stats">{{ history_images|length }} images generated</span>
+                </div>
+                <div>
+                    <select class="sort-select" id="sortOption" onchange="sortAssets()">
+                        <option value="newest">최신순 (Newest)</option>
+                        <option value="oldest">과거순 (Oldest)</option>
+                    </select>
+                </div>
+            </div>
+            
+            {% if history_images %}
+                <div class="history-grid" id="historyGrid">
+                    {% for url in history_images %}
+                        <div class="history-item" onclick="openModal('{{url}}')" data-index="{{ loop.index }}">
+                            <img src="{{url}}" alt="History">
+                            <div class="history-info">
+                                <span>View Details</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card-custom text-center py-5">
+                    <p class="text-muted m-0">생성된 기록이 없습니다.</p>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Image Preview</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <img src="" id="modalImage" class="modal-img-full">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 모달 열기 함수
+        function openModal(url) {
+            document.getElementById('modalImage').src = url;
+            const myModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            myModal.show();
+        }
+
+        // 정렬 기능 함수
+        function sortAssets() {
+            const grid = document.getElementById('historyGrid');
+            if (!grid) return;
+            const items = Array.from(grid.getElementsByClassName('history-item'));
+            const sortOption = document.getElementById('sortOption').value;
+
+            items.sort((a, b) => {
+                const indexA = parseInt(a.getAttribute('data-index'));
+                const indexB = parseInt(b.getAttribute('data-index'));
+                return sortOption === 'newest' ? indexB - indexA : indexA - indexB;
+            });
+
+            // 그리드 재정렬
+            items.forEach(item => grid.appendChild(item));
+        }
+
+        // 페이지 로드 시 기본 최신순 정렬 적용
+        window.onload = function() {
+            if (document.getElementById('sortOption')) sortAssets();
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Minimal (Functions)</title>
+</head>
+<body>
+    <h1>ComfyUI 프롬프트 -> 이미지</h1>
+    
+    <nav>
+        <a href="/">[생성하기]</a>
+        <a href="/?history=true">[에셋/히스토리 보기]</a>
+    </nav>
+    <hr>
+
+    {% if not show_history %}
+        <form method="post">
+            <label>Positive Prompt</label><br>
+            <textarea name="pos" rows="3" cols="70">{{pos}}</textarea><br><br>
+            <label>Negative Prompt</label><br>
+            <textarea name="neg" rows="3" cols="70">{{neg}}</textarea><br><br>
+            <button type="submit">Generate</button>
+        </form>
+
+        {% if img_url %}
+            <h2>Result</h2>
+            <img src="{{img_url}}" style="max-width:768px">
+        {% endif %}
+    {% else %}
+        <h2>생성된 이미지 리스트 (Assets)</h2>
+        {% if history_images %}
+            <div>
+                {% for url in history_images %}
+                    <div style="display: inline-block; margin: 10px;">
+                        <img src="{{url}}" style="width:200px; display:block;">
+                        <a href="{{url}}" target="_blank">크게 보기</a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>생성된 내역이 없습니다.</p>
+        {% endif %}
+    {% endif %}
+
+</body>
+</html>
