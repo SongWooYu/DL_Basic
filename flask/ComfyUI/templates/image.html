@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Minimal (Functions)</title>
+    
+</head>
+<body>
+    <h1>ComfyUI 프롬프트 -> 이미지</h1>
+    <form method = "post">
+        <label>Positive Prompt</label></br>
+        <textarea name="pos" row="3" cols="70">{{pos}}</textarea></br></br>
+        <label>Negative Prompt</label></br>
+        <textarea name="neg" row="3" cols="70">{{neg}}</textarea></br></br>
+        <button type="submit">Generate</button>
+    </form>
+    {% if img_url %}
+        <h2>Result</h2>
+        <img src="{{img_url}}" style="max-width:768px">
+    {% endif %}
+</body>
+</html>
