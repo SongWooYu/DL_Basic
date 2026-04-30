@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Ollama Chat (Flask Streaming)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
+           margin: 24px; max-width: 880px; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+    .chat { border: 1px solid #ddd; border-radius: 10px; padding: 12px; min-height: 220px;}
+    .bubble { padding: 10px 12px; border-radius: 10px; margin: 6px 0; white-space: pre-wrap; }
+    .user { background: rgba(0,120,255,.08); }
+    .assistant { background: rgba(0,0,0,.05); }
+    textarea { width: 100%; min-height: 100px; }
+    input, button, select, textarea { font-size: 16px; }
+    button { padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+    .small { font-size: 12px; opacity: .7; }
+    .muted { opacity: .6; }
+    .toolbar { display: flex; gap: 10px; align-items: center; }
+    .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid currentColor;
+               border-right-color: transparent; border-radius: 50%; animation: s .8s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <h1>Ollama Chat (Streaming)</h1>
+
+  <div class="toolbar">
+    <label>Model:
+      <input id="model" value="gemma4:e2b" />
+    </label>
+    <span class="small muted">/api/chat 스트리밍만 사용</span>
+  </div>
+
+  <div class="chat" id="chat"></div>
+
+  <div style="margin-top:12px">
+    <label for="prompt">Message</label>
+    <textarea id="prompt" placeholder="메시지를 입력하세요. Shift+Enter로 줄바꿈, Enter로 전송"></textarea>
+    <div class="row" style="margin-top:8px">
+      <div class="small muted">역할 메시지(system)나 이전 대화는 자동으로 유지됩니다.</div>
+      <div>
+        <button id="send">Send</button>
+        <button id="clear" title="대화 초기화">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const chatDiv = $("chat");
+    const modelInput = $("model");
+    const promptTA = $("prompt");
+    const sendBtn = $("send");
+    const clearBtn = $("clear");
+
+    // 대화 히스토리(서버로 그대로 전달)
+    // 필요 시 system 메시지를 선행 추가:
+    const history = [
+       //{ role: "system", content: "You are a helpful SQL assistant. You're only answer with SQL queries." }
+    ];
+
+    function addBubble(role, text, attachId = null) {
+      const div = document.createElement("div");
+      div.className = `bubble ${role}`;
+      if (attachId) div.dataset.attachId = attachId;
+      div.textContent = text;
+      chatDiv.appendChild(div);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+      return div;
+    }
+
+    function updateAttachedBubble(attachId, appendText) {
+      const node = [...chatDiv.querySelectorAll(".bubble")]
+        .find(n => n.dataset.attachId === attachId);
+      if (node) {
+        node.textContent += appendText;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      }
+    }
+
+    function setSending(isSending) {
+      sendBtn.disabled = isSending;
+      modelInput.disabled = isSending;
+      promptTA.disabled = isSending;
+      sendBtn.innerHTML = isSending ? `<span class="spinner"></span> Sending` : `Send`;
+    }
+
+    async function sendMessage() {
+      const content = promptTA.value.trim();
+      if (!content) return;
+      promptTA.value = "";
+
+      // 사용자 버블 추가
+      addBubble("user", content);
+
+      // 클라이언트 히스토리에 사용자 메시지 push
+      history.push({ role: "user", content });
+
+      // 비어있는 assistant 버블 생성(스트리밍으로 채움)
+      const attachId = String(Date.now());
+      addBubble("assistant", "", attachId);
+
+      setSending(true);
+
+      try {
+        const resp = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: modelInput.value || "llama3",
+            messages: history,
+          }),
+        });
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+
+        // 스트리밍 루프 (NDJSON 라인단위)
+        let assistantAccum = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+
+          for (const line of chunk.split("\n")) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            // 각 라인은 JSON
+            try {
+              const obj = JSON.parse(trimmed);
+              // Ollama chat 스트림은 매 라인에 message.content 조각이 올 수 있음
+              if (obj.message && typeof obj.message.content === "string") {
+                assistantAccum += obj.message.content;
+                updateAttachedBubble(attachId, obj.message.content);
+              }
+              // 마지막 라인에 done: true가 옴
+              if (obj.done) {
+                // 서버 응답 종료 시, 최종 assistant 메시지를 히스토리에 반영
+                history.push({ role: "assistant", content: assistantAccum });
+              }
+            } catch (e) {
+              // 파싱 실패 라인은 무시
+            }
+          }
+        }
+      } catch (e) {
+        updateAttachedBubble(attachId, "\n[에러] 응답을 가져오는 중 문제가 발생했습니다.");
+        console.error(e);
+      } finally {
+        setSending(false);
+      }
+    }
+
+    // Enter = 전송, Shift+Enter = 줄바꿈
+    promptTA.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    sendBtn.addEventListener("click", sendMessage);
+
+    clearBtn.addEventListener("click", () => {
+      chatDiv.innerHTML = "";
+      history.length = 0; // 대화 초기화 (system 포함을 원하면 여기서 다시 push)
+    });
+  </script>
+</body>
+</html>

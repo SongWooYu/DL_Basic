@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>PromptForge Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --bg-soft: #111827;
+      --panel: rgba(17, 24, 39, 0.76);
+      --panel-solid: #111827;
+      --border: rgba(148, 163, 184, 0.18);
+      --border-strong: rgba(148, 163, 184, 0.34);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --subtle: #64748b;
+      --accent: #8b5cf6;
+      --accent-2: #06b6d4;
+      --danger: #fb7185;
+      --success: #22c55e;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background:
+        radial-gradient(circle at 10% 5%, rgba(139, 92, 246, 0.26), transparent 34%),
+        radial-gradient(circle at 90% 12%, rgba(6, 182, 212, 0.18), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(59, 130, 246, 0.16), transparent 34%),
+        var(--bg);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1240px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(11, 15, 25, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 12px 32px rgba(139, 92, 246, 0.35);
+    }
+
+    .brand-title {
+      line-height: 1.05;
+    }
+
+    .brand-title span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-top: 3px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.56);
+      border-radius: 999px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 999px;
+      transition: 160ms ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .hero {
+      padding: 56px 0 30px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .hero-copy {
+      padding: 28px 0;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #c4b5fd;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 76px);
+      line-height: 0.96;
+      letter-spacing: -0.075em;
+    }
+
+    .hero-copy p {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.75;
+      word-break: keep-all;
+    }
+
+    .status-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      min-height: 280px;
+    }
+
+    .status-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -80px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      background: rgba(6, 182, 212, 0.18);
+      filter: blur(18px);
+    }
+
+    .metric {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.64);
+      border: 1px solid var(--border);
+    }
+
+    .metric-row strong {
+      font-size: 14px;
+    }
+
+    .metric-row span {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 420px minmax(0, 1fr);
+      gap: 28px;
+      padding-bottom: 64px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)),
+        var(--panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      padding: 24px 24px 0;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-desc {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .form-body {
+      padding: 24px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 9px;
+    }
+
+    label small {
+      color: var(--subtle);
+      font-weight: 700;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      color: var(--text);
+      background: rgba(2, 6, 23, 0.62);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      font: inherit;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    input {
+      height: 48px;
+      padding: 0 14px;
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      padding: 14px;
+      line-height: 1.65;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(139, 92, 246, 0.78);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14);
+      background: rgba(2, 6, 23, 0.82);
+    }
+
+    textarea::placeholder,
+    input::placeholder {
+      color: #64748b;
+    }
+
+    .submit-btn {
+      width: 100%;
+      height: 54px;
+      border: 0;
+      border-radius: 16px;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      background:
+        linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 18px 42px rgba(139, 92, 246, 0.28);
+      transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow: 0 22px 54px rgba(139, 92, 246, 0.36);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn[disabled] {
+      cursor: wait;
+      opacity: 0.72;
+      transform: none;
+    }
+
+    .preview-panel {
+      min-height: 640px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-stage {
+      flex: 1;
+      margin: 24px;
+      min-height: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.035) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.035) 75%),
+        rgba(2, 6, 23, 0.58);
+      background-size: 28px 28px;
+      background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+    }
+
+    .result-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-height: 680px;
+      object-fit: contain;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 18px;
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(6, 182, 212, 0.18));
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .image-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 24px 24px;
+      color: #a5b4fc;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .output-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .output-card {
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.58);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .output-card h2 {
+      margin: 0;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+
+    pre {
+      margin: 0;
+      min-height: 150px;
+      padding: 18px;
+      color: #dbeafe;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      background: rgba(2, 6, 23, 0.62);
+    }
+
+    .error-box {
+      margin-top: 24px;
+      padding: 18px 20px;
+      border-radius: var(--radius-md);
+      color: #fecdd3;
+      background: rgba(127, 29, 29, 0.35);
+      border: 1px solid rgba(251, 113, 133, 0.34);
+      line-height: 1.65;
+    }
+
+    .raw-box {
+      margin-top: 18px;
+    }
+
+    .loading-note {
+      display: none;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .is-loading .loading-note {
+      display: block;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .main-grid,
+      .output-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 36px;
+      }
+
+      .main-grid {
+        padding-bottom: 42px;
+      }
+
+      .preview-panel {
+        min-height: auto;
+      }
+
+      .preview-stage {
+        min-height: 420px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 24px, 1240px);
+      }
+
+      .nav {
+        height: auto;
+        padding: 14px 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav-links {
+        width: 100%;
+        overflow-x: auto;
+        justify-content: flex-start;
+      }
+
+      .nav-links a {
+        white-space: nowrap;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      .panel-header,
+      .form-body {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .preview-stage {
+        margin: 18px;
+        min-height: 320px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="/3">
+        <span class="brand-mark"></span>
+        <span class="brand-title">
+          PromptForge
+          <span>LLM × ComfyUI Studio</span>
+        </span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="/">Generate</a>
+        <a href="/2">Chat</a>
+        <a href="/3" class="active">Studio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Local AI Rendering Pipeline</div>
+          <h1>Korean to Image Generator</h1>
+          <p>
+            한국어로 장면을 설명하면 Local LLM이 Stable Diffusion용 영문 프롬프트로 정제하고,
+            ComfyUI 워크플로우를 통해 이미지를 생성합니다.
+          </p>
+        </div>
+
+        <aside class="status-card">
+          <div class="metric">
+            <div class="metric-row">
+              <strong>Language Model</strong>
+              <span>{{ model or 'gemma4:e2b' }}</span>
+            </div>
+            <div class="metric-row">
+              <strong>Prompt Engine</strong>
+              <span>Ollama API</span>
+            </div>
+            <div class="metric-row">
+              <strong>Image Backend</strong>
+              <span>ComfyUI Workflow</span>
+            </div>
+            <div class="metric-row">
+              <strong>Output</strong>
+              <span>Generated Image Preview</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Create Image</h2>
+          <p class="panel-desc">
+            만들고 싶은 장면을 자연어로 입력하세요. 인물, 배경, 분위기, 색감, 카메라 구도까지 적으면 결과가 더 안정적입니다.
+          </p>
+        </div>
+
+        <form class="form-body" method="post" id="generateForm">
+          <div class="field">
+            <label>
+              Ollama Model
+              <small>installed model</small>
+            </label>
+            <input name="model" value="{{ model or 'gemma4:e2b' }}" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label>
+              한글 이미지 요구사항
+              <small>Korean request</small>
+            </label>
+            <textarea
+              name="korean_request"
+              placeholder="예: 비 오는 밤, 네온사인이 비치는 골목길에서 검은 코트를 입은 탐정이 서 있는 장면. 시네마틱하고 사실적인 분위기."
+            >{{ korean_request }}</textarea>
+          </div>
+
+          <button class="submit-btn" type="submit" id="submitBtn">
+            프롬프트 변환 후 이미지 생성
+          </button>
+
+          <div class="loading-note">
+            LLM 프롬프트 변환과 ComfyUI 이미지 생성이 진행 중입니다. 보통 수 초에서 수십 초 정도 걸립니다.
+          </div>
+        </form>
+      </section>
+
+      <section class="panel preview-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Preview</h2>
+          <p class="panel-desc">
+            생성된 이미지는 ComfyUI 결과 URL을 통해 바로 표시됩니다.
+          </p>
+        </div>
+
+        <div class="preview-stage">
+          {% if img_url %}
+            <img src="{{ img_url }}" class="result-image" alt="Generated image">
+          {% else %}
+            <div class="empty-state">
+              <div class="empty-icon">⌁</div>
+              <strong>아직 생성된 이미지가 없습니다.</strong>
+              <span>왼쪽 입력창에 요구사항을 작성하고 생성 버튼을 누르세요.</span>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if img_url %}
+          <a class="image-link" href="{{ img_url }}" target="_blank">
+            새 탭에서 원본 이미지 보기 →
+          </a>
+        {% endif %}
+      </section>
+    </section>
+
+    {% if error %}
+      <section class="error-box">
+        <strong>Error</strong><br>
+        {{ error }}
+      </section>
+    {% endif %}
+
+    {% if pos %}
+      <section class="output-grid">
+        <article class="output-card">
+          <h2>Positive Prompt</h2>
+          <pre>{{ pos }}</pre>
+        </article>
+
+        <article class="output-card">
+          <h2>Negative Prompt</h2>
+          <pre>{{ neg }}</pre>
+        </article>
+      </section>
+    {% endif %}
+
+    {% if raw_llm %}
+      <section class="output-card raw-box">
+        <h2>Raw LLM Output</h2>
+        <pre>{{ raw_llm }}</pre>
+      </section>
+    {% endif %}
+  </main>
+
+  <script>
+    const form = document.getElementById("generateForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const promptTextarea = document.querySelector('textarea[name="korean_request"]');
+
+    promptTextarea.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+        }
+        });
+
+    form.addEventListener("submit", () => {
+      document.body.classList.add("is-loading");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "생성 중...";
+    });
+  </script>
+</body>
+</html>

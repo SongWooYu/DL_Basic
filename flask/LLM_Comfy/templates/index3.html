@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>PromptForge Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --panel: rgba(17, 24, 39, 0.76);
+      --border: rgba(148, 163, 184, 0.18);
+      --border-strong: rgba(148, 163, 184, 0.34);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --subtle: #64748b;
+      --accent: #8b5cf6;
+      --accent-2: #06b6d4;
+      --danger: #fb7185;
+      --success: #22c55e;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background:
+        radial-gradient(circle at 10% 5%, rgba(139, 92, 246, 0.26), transparent 34%),
+        radial-gradient(circle at 90% 12%, rgba(6, 182, 212, 0.18), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(59, 130, 246, 0.16), transparent 34%),
+        var(--bg);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1240px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(11, 15, 25, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 12px 32px rgba(139, 92, 246, 0.35);
+    }
+
+    .brand-title {
+      line-height: 1.05;
+    }
+
+    .brand-title span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-top: 3px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.56);
+      border-radius: 999px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 999px;
+      transition: 160ms ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .hero {
+      padding: 56px 0 30px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .hero-copy {
+      padding: 28px 0;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #c4b5fd;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 76px);
+      line-height: 0.96;
+      letter-spacing: -0.075em;
+    }
+
+    .hero-copy p {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.75;
+      word-break: keep-all;
+    }
+
+    .status-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      min-height: 280px;
+    }
+
+    .status-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -80px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      background: rgba(6, 182, 212, 0.18);
+      filter: blur(18px);
+    }
+
+    .metric {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.64);
+      border: 1px solid var(--border);
+    }
+
+    .metric-row strong {
+      font-size: 14px;
+    }
+
+    .metric-row span {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 28px;
+      padding-bottom: 64px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)),
+        var(--panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 24px 24px 0;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-desc {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .settings-body {
+      padding: 24px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 9px;
+    }
+
+    label small {
+      color: var(--subtle);
+      font-weight: 700;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      color: var(--text);
+      background: rgba(2, 6, 23, 0.62);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      font: inherit;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    input {
+      height: 48px;
+      padding: 0 14px;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+      padding: 14px;
+      line-height: 1.65;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(139, 92, 246, 0.78);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14);
+      background: rgba(2, 6, 23, 0.82);
+    }
+
+    textarea::placeholder,
+    input::placeholder {
+      color: #64748b;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .submit-btn,
+    .ghost-btn {
+      height: 52px;
+      border: 0;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .submit-btn {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 18px 42px rgba(139, 92, 246, 0.28);
+      padding: 0 22px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow: 0 22px 54px rgba(139, 92, 246, 0.36);
+    }
+
+    .ghost-btn {
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid var(--border);
+      padding: 0 18px;
+    }
+
+    .ghost-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .submit-btn[disabled],
+    .ghost-btn[disabled] {
+      cursor: wait;
+      opacity: 0.72;
+      transform: none;
+    }
+
+    .hint-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      padding: 13px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.58);
+    }
+
+    .chat-panel {
+      min-height: 700px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-window {
+      flex: 1;
+      margin: 24px;
+      min-height: 500px;
+      padding: 22px;
+      overflow-y: auto;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.035) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.035) 75%),
+        rgba(2, 6, 23, 0.58);
+      background-size: 28px 28px;
+      background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+    }
+
+    .empty-state {
+      height: 100%;
+      min-height: 450px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .empty-icon {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(6, 182, 212, 0.18));
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+    }
+
+    .bubble {
+      width: fit-content;
+      max-width: min(760px, 92%);
+      margin: 12px 0;
+      padding: 15px 17px;
+      border-radius: 18px;
+      line-height: 1.72;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid var(--border);
+      animation: rise 180ms ease-out;
+    }
+
+    .bubble.user {
+      margin-left: auto;
+      color: #f8fafc;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.78), rgba(6, 182, 212, 0.58));
+      border-color: rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 30px rgba(6, 182, 212, 0.12);
+    }
+
+    .bubble.assistant {
+      margin-right: auto;
+      color: #e5e7eb;
+      background: rgba(15, 23, 42, 0.82);
+    }
+
+    .bubble.error {
+      color: #fecdd3;
+      background: rgba(127, 29, 29, 0.35);
+      border-color: rgba(251, 113, 133, 0.34);
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .composer {
+      padding: 0 24px 24px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin-right: 8px;
+      vertical-align: -1px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .chat-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 36px;
+      }
+
+      .chat-layout {
+        padding-bottom: 42px;
+      }
+
+      .chat-panel {
+        min-height: auto;
+      }
+
+      .chat-window {
+        min-height: 460px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 24px, 1240px);
+      }
+
+      .nav {
+        height: auto;
+        padding: 14px 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav-links {
+        width: 100%;
+        overflow-x: auto;
+        justify-content: flex-start;
+      }
+
+      .nav-links a {
+        white-space: nowrap;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      .panel-header,
+      .settings-body {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .chat-window {
+        margin: 18px;
+        min-height: 360px;
+        padding: 16px;
+      }
+
+      .composer {
+        padding: 0 18px 18px;
+      }
+
+      .action-row {
+        grid-template-columns: 1fr;
+      }
+
+      .ghost-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="/2">
+        <span class="brand-mark"></span>
+        <span class="brand-title">
+          PromptForge
+          <span>Chat Stream</span>
+        </span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="/">Generate</a>
+        <a href="/2" class="active">Chat</a>
+        <a href="/3">Studio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Ollama Chat API</div>
+          <h1>대화 맥락을 유지하며 응답합니다.</h1>
+          <p>
+            사용자의 메시지와 이전 assistant 응답을 history로 보관한 뒤,
+            Ollama chat 엔드포인트에 전달하여 연속 대화를 구성합니다.
+          </p>
+        </div>
+
+        <aside class="status-card">
+          <div class="metric">
+            <div class="metric-row">
+              <strong>Mode</strong>
+              <span>Multi-turn Chat</span>
+            </div>
+            <div class="metric-row">
+              <strong>Endpoint</strong>
+              <span>/api/chat</span>
+            </div>
+            <div class="metric-row">
+              <strong>Streaming</strong>
+              <span>message.content</span>
+            </div>
+            <div class="metric-row">
+              <strong>History</strong>
+              <span>Client-side Memory</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="chat-layout">
+      <aside class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Chat Settings</h2>
+          <p class="panel-desc">
+            모델을 지정하고 대화를 시작하세요. Enter는 전송, Shift+Enter는 줄바꿈입니다.
+          </p>
+        </div>
+
+        <div class="settings-body">
+          <div class="field">
+            <label>
+              Ollama Model
+              <small>installed model</small>
+            </label>
+            <input id="model" value="gemma4:e2b" autocomplete="off">
+          </div>
+
+          <div class="hint-list">
+            <div class="hint">
+              이전 대화는 브라우저 메모리의 history 배열에 저장됩니다.
+            </div>
+            <div class="hint">
+              Clear를 누르면 화면과 대화 히스토리가 함께 초기화됩니다.
+            </div>
+            <div class="hint">
+              시스템 프롬프트가 필요하면 JavaScript의 history 배열 첫 항목으로 추가하면 됩니다.
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel chat-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Conversation</h2>
+          <p class="panel-desc">
+            스트리밍 응답이 도착하는 즉시 assistant 메시지에 누적됩니다.
+          </p>
+        </div>
+
+        <div class="chat-window" id="chat">
+          <div class="empty-state" id="empty">
+            <div>
+              <div class="empty-icon">⌁</div>
+              <strong>아직 대화가 없습니다.</strong>
+              <span>아래 입력창에 메시지를 작성하고 Send를 누르세요.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer">
+          <div class="field">
+            <label>
+              Message
+              <small>Enter to send</small>
+            </label>
+            <textarea id="prompt" placeholder="메시지를 입력하세요. Shift+Enter로 줄바꿈, Enter로 전송"></textarea>
+          </div>
+
+          <div class="action-row">
+            <button class="submit-btn" id="send" type="button">Send Message</button>
+            <button class="ghost-btn" id="clear" type="button" title="대화 초기화">Clear</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const chatDiv = $("chat");
+    const emptyState = $("empty");
+    const modelInput = $("model");
+    const promptTA = $("prompt");
+    const sendBtn = $("send");
+    const clearBtn = $("clear");
+
+    const history = [
+      // { role: "system", content: "You are a helpful assistant." }
+    ];
+
+    function removeEmptyState() {
+      if (emptyState && emptyState.parentNode) {
+        emptyState.remove();
+      }
+    }
+
+    function addBubble(role, text, attachId = null) {
+      removeEmptyState();
+
+      const div = document.createElement("div");
+      div.className = `bubble ${role}`;
+
+      if (attachId) {
+        div.dataset.attachId = attachId;
+      }
+
+      div.textContent = text;
+      chatDiv.appendChild(div);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+
+      return div;
+    }
+
+    function updateAttachedBubble(attachId, appendText) {
+      const node = [...chatDiv.querySelectorAll(".bubble")]
+        .find(n => n.dataset.attachId === attachId);
+
+      if (node) {
+        node.textContent += appendText;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      }
+    }
+
+    function setSending(isSending) {
+      sendBtn.disabled = isSending;
+      clearBtn.disabled = isSending;
+      modelInput.disabled = isSending;
+      promptTA.disabled = isSending;
+
+      sendBtn.innerHTML = isSending
+        ? `<span class="spinner"></span>Sending`
+        : `Send Message`;
+    }
+
+    async function sendMessage() {
+      const content = promptTA.value.trim();
+
+      if (!content) {
+        return;
+      }
+
+      promptTA.value = "";
+
+      addBubble("user", content);
+      history.push({ role: "user", content });
+
+      const attachId = String(Date.now());
+      addBubble("assistant", "", attachId);
+
+      setSending(true);
+
+      try {
+        const resp = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: modelInput.value.trim() || "gemma4:e2b",
+            messages: history
+          })
+        });
+
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+
+        let assistantAccum = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+
+          for (const line of chunk.split("\n")) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            try {
+              const obj = JSON.parse(trimmed);
+
+              if (obj.message && typeof obj.message.content === "string") {
+                assistantAccum += obj.message.content;
+                updateAttachedBubble(attachId, obj.message.content);
+              }
+
+              if (obj.done) {
+                history.push({
+                  role: "assistant",
+                  content: assistantAccum
+                });
+              }
+
+              if (obj.error) {
+                updateAttachedBubble(attachId, `\n[Error] ${obj.error}`);
+              }
+            } catch (e) {
+              // NDJSON 조각 파싱 실패 라인은 무시
+            }
+          }
+        }
+      } catch (e) {
+        const node = [...chatDiv.querySelectorAll(".bubble")]
+          .find(n => n.dataset.attachId === attachId);
+
+        if (node) {
+          node.classList.add("error");
+          node.textContent += `\n응답을 가져오는 중 문제가 발생했습니다.\n${e.message}`;
+        }
+
+        console.error(e);
+      } finally {
+        setSending(false);
+        promptTA.focus();
+      }
+    }
+
+    promptTA.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    clearBtn.addEventListener("click", () => {
+      chatDiv.innerHTML = `
+        <div class="empty-state" id="empty">
+          <div>
+            <div class="empty-icon">⌁</div>
+            <strong>아직 대화가 없습니다.</strong>
+            <span>아래 입력창에 메시지를 작성하고 Send를 누르세요.</span>
+          </div>
+        </div>
+      `;
+
+      history.length = 0;
+      promptTA.value = "";
+      promptTA.focus();
+    });
+  </script>
+</body>
+</html>

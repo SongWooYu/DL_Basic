@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>PromptForge Generate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --panel: rgba(17, 24, 39, 0.76);
+      --border: rgba(148, 163, 184, 0.18);
+      --border-strong: rgba(148, 163, 184, 0.34);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --subtle: #64748b;
+      --accent: #8b5cf6;
+      --accent-2: #06b6d4;
+      --danger: #fb7185;
+      --success: #22c55e;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background:
+        radial-gradient(circle at 10% 5%, rgba(139, 92, 246, 0.26), transparent 34%),
+        radial-gradient(circle at 90% 12%, rgba(6, 182, 212, 0.18), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(59, 130, 246, 0.16), transparent 34%),
+        var(--bg);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1240px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(11, 15, 25, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 12px 32px rgba(139, 92, 246, 0.35);
+    }
+
+    .brand-title {
+      line-height: 1.05;
+    }
+
+    .brand-title span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-top: 3px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.56);
+      border-radius: 999px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 999px;
+      transition: 160ms ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .hero {
+      padding: 56px 0 30px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .hero-copy {
+      padding: 28px 0;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #c4b5fd;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(40px, 6vw, 76px);
+      line-height: 0.96;
+      letter-spacing: -0.075em;
+    }
+
+    .hero-copy p {
+      max-width: 620px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.75;
+      word-break: keep-all;
+    }
+
+    .status-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      min-height: 280px;
+    }
+
+    .status-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -80px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 999px;
+      background: rgba(6, 182, 212, 0.18);
+      filter: blur(18px);
+    }
+
+    .metric {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.64);
+      border: 1px solid var(--border);
+    }
+
+    .metric-row strong {
+      font-size: 14px;
+    }
+
+    .metric-row span {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 420px minmax(0, 1fr);
+      gap: 28px;
+      padding-bottom: 64px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)),
+        var(--panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 24px 24px 0;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-desc {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .form-body {
+      padding: 24px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 9px;
+    }
+
+    label small {
+      color: var(--subtle);
+      font-weight: 700;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      color: var(--text);
+      background: rgba(2, 6, 23, 0.62);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      font: inherit;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    input {
+      height: 48px;
+      padding: 0 14px;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      padding: 14px;
+      line-height: 1.65;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(139, 92, 246, 0.78);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14);
+      background: rgba(2, 6, 23, 0.82);
+    }
+
+    textarea::placeholder,
+    input::placeholder {
+      color: #64748b;
+    }
+
+    .submit-btn {
+      width: 100%;
+      height: 54px;
+      border: 0;
+      border-radius: 16px;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 18px 42px rgba(139, 92, 246, 0.28);
+      transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow: 0 22px 54px rgba(139, 92, 246, 0.36);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn[disabled] {
+      cursor: wait;
+      opacity: 0.72;
+      transform: none;
+    }
+
+    .output-panel {
+      min-height: 640px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-box {
+      flex: 1;
+      margin: 24px;
+      min-height: 500px;
+      padding: 24px;
+      overflow: auto;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.035) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.035) 75%),
+        rgba(2, 6, 23, 0.58);
+      background-size: 28px 28px;
+      background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.75;
+      color: #e5e7eb;
+    }
+
+    .empty-state {
+      height: 100%;
+      min-height: 450px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .empty-icon {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(6, 182, 212, 0.18));
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+    }
+
+    .loading-note {
+      display: none;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .is-loading .loading-note {
+      display: block;
+    }
+
+    .error-text {
+      color: #fecdd3;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 36px;
+      }
+
+      .main-grid {
+        padding-bottom: 42px;
+      }
+
+      .output-panel {
+        min-height: auto;
+      }
+
+      .output-box {
+        min-height: 420px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 24px, 1240px);
+      }
+
+      .nav {
+        height: auto;
+        padding: 14px 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav-links {
+        width: 100%;
+        overflow-x: auto;
+        justify-content: flex-start;
+      }
+
+      .nav-links a {
+        white-space: nowrap;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      .panel-header,
+      .form-body {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .output-box {
+        margin: 18px;
+        min-height: 320px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="/">
+        <span class="brand-mark"></span>
+        <span class="brand-title">
+          PromptForge
+          <span>Generate Stream</span>
+        </span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="/" class="active">Generate</a>
+        <a href="/2">Chat</a>
+        <a href="/3">Studio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Ollama Generate API</div>
+          <h1>단일 프롬프트를 빠르게 실행합니다.</h1>
+          <p>
+            Ollama의 generate 엔드포인트를 Flask에서 스트리밍으로 연결한 테스트 페이지입니다.
+            모델과 프롬프트를 입력하면 응답이 실시간으로 출력됩니다.
+          </p>
+        </div>
+
+        <aside class="status-card">
+          <div class="metric">
+            <div class="metric-row">
+              <strong>Mode</strong>
+              <span>Single Prompt</span>
+            </div>
+            <div class="metric-row">
+              <strong>Endpoint</strong>
+              <span>/api/generate</span>
+            </div>
+            <div class="metric-row">
+              <strong>Streaming</strong>
+              <span>NDJSON Response</span>
+            </div>
+            <div class="metric-row">
+              <strong>Default Model</strong>
+              <span>gemma4:e2b</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Generate Request</h2>
+          <p class="panel-desc">
+            간단한 질의, 문장 생성, 번역, 요약 같은 1회성 요청을 테스트할 때 사용합니다.
+          </p>
+        </div>
+
+        <div class="form-body">
+          <div class="field">
+            <label>
+              Ollama Model
+              <small>installed model</small>
+            </label>
+            <input id="model" value="gemma4:e2b" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label>
+              Prompt
+              <small>single turn</small>
+            </label>
+            <textarea id="prompt" placeholder="질문을 입력하세요. 예: 딥러닝을 처음 배우는 학생에게 Local LLM을 쉽게 설명해줘."></textarea>
+          </div>
+
+          <button class="submit-btn" id="go" type="button">
+            Generate Response
+          </button>
+
+          <div class="loading-note">
+            Ollama 응답을 스트리밍으로 수신하는 중입니다.
+          </div>
+        </div>
+      </section>
+
+      <section class="panel output-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Output</h2>
+          <p class="panel-desc">
+            모델 응답이 도착하는 즉시 아래 영역에 누적됩니다.
+          </p>
+        </div>
+
+        <div class="output-box" id="out">
+          <div class="empty-state" id="empty">
+            <div>
+              <div class="empty-icon">⌁</div>
+              <strong>아직 응답이 없습니다.</strong>
+              <span>왼쪽에서 프롬프트를 입력하고 Generate를 누르세요.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+    const goBtn = el("go");
+    const out = el("out");
+    el("prompt").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        goBtn.click();
+      }
+    });
+
+    function setLoading(isLoading) {
+      document.body.classList.toggle("is-loading", isLoading);
+      goBtn.disabled = isLoading;
+      goBtn.textContent = isLoading ? "Generating..." : "Generate Response";
+    }
+
+    function setOutput(text) {
+      out.textContent = text;
+    }
+
+    goBtn.addEventListener("click", async () => {
+      const model = el("model").value.trim() || "gemma4:e2b";
+      const prompt = el("prompt").value.trim();
+
+      if (!prompt) {
+        setOutput("프롬프트를 입력하세요.");
+        return;
+      }
+
+      setOutput("");
+      setLoading(true);
+
+      const payload = {
+        model,
+        prompt,
+        stream: true
+      };
+
+      try {
+        const resp = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+
+          for (const line of chunk.split("\n")) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            try {
+              const obj = JSON.parse(trimmed);
+
+              if (obj.response) {
+                out.textContent += obj.response;
+              }
+
+              if (obj.error) {
+                out.textContent += `\n[Error] ${obj.error}`;
+              }
+            } catch (e) {
+              // NDJSON 조각 파싱 실패 라인은 무시
+            }
+          }
+        }
+      } catch (e) {
+        out.innerHTML = `<span class="error-text">응답을 가져오는 중 문제가 발생했습니다.\n${e.message}</span>`;
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>

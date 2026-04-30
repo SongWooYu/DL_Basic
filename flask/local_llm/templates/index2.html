@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Ollama + Flask Demo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto; margin: 20px; }
+    textarea { width: 100%; height: 140px; }
+    input, select, button { font-size: 16px; }
+    #out { white-space: pre-wrap; border: 1px solid #ddd; padding: 12px; border-radius: 8px; min-height: 120px; }
+  </style>
+</head>
+<body>
+  <h1>Ollama Generate (Flask)</h1>
+
+  <label>Model:
+    <input id="model" value="gemma4:e2b" />
+  </label>
+  <br><br>
+
+  <label>Prompt</label><br>
+  <textarea id="prompt" placeholder="질문을 입력하세요."></textarea>
+  <br>
+
+
+  <button id="go">Generate</button>
+
+  <h3>Output</h3>
+  <div id="out"></div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    document.getElementById('go').addEventListener('click', async () => {
+      el('out').textContent = '';
+      const payload = {
+        model: el('model').value || 'gemma3:4b',
+        prompt: el('prompt').value || '',
+        stream: true
+      };
+
+      const resp = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+
+          // NDJSON: 줄 단위 JSON
+          for (const line of chunk.split('\\n')) {
+            if (!line.trim()) continue;
+            try {
+              const obj = JSON.parse(line);
+              if (obj.response) {
+                el('out').textContent += obj.response;
+              }
+            } catch (e) {
+              // JSON 파싱 실패 라인은 무시
+            }
+          }
+        }
+    });
+  </script>
+</body>
+</html>
