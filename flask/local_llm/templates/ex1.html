@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Basic: system + user Test</title>
+</head>
+<body>
+<h3>① Basic: system + user</h3>
+
+<label>System:</label><br>
+<textarea id="system" rows="3" cols="60" placeholder="예) 너는 친절한 선생님이야."></textarea><br><br>
+
+<label>User:</label><br>
+<textarea id="user" rows="3" cols="60" placeholder="예) 파이썬이 뭐야?"></textarea><br><br>
+
+<button id="run">Run</button>
+<pre id="out"></pre>
+
+<script>
+document.getElementById("run").onclick = async () => {
+  const sys = document.getElementById("system").value.trim();
+  const usr = document.getElementById("user").value.trim();
+  const out = document.getElementById("out");
+  if (!usr) return alert("User 메시지를 입력하세요.");
+
+  const messages = [];
+  if (sys) messages.push({ role: "system", content: sys });
+  messages.push({ role: "user", content: usr });
+
+  const payload = { model: "gemma4:e2b", stream: false, messages };
+  out.textContent = "요청 중...";
+
+  try {
+    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    out.textContent = data.message?.content || JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = e;
+  }
+};
+
+
+// document.getElementById("run").onclick = async () => {
+//   const sys = document.getElementById("system").value.trim();
+//   const usr = document.getElementById("user").value.trim();
+//   const out = document.getElementById("out");
+//   if (!usr) return alert("User 메시지를 입력하세요.");
+
+//   const messages = [];
+//   if (sys) messages.push({ role: "system", content: sys });
+//   messages.push({ role: "user", content: usr });
+
+//   const payload = { model: "gemma4:e2b", messages }; // stream: false를 넣어도 서버가 무시하므로 스트림 처리를 합니다.
+//   out.textContent = "답변 생성 중...";
+
+//   try {
+//     const res = await fetch("/api/chat", { // 프록시 경로 사용
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(payload)
+//     });
+
+//     // 스트림 데이터를 읽기 위한 도구들
+//     const reader = res.body.getReader();
+//     const decoder = new TextDecoder();
+//     let resultText = "";
+//     out.textContent = ""; // 초기화
+
+//     while (true) {
+//       const { done, value } = await reader.read();
+//       if (done) break;
+
+//       // 서버에서 온 데이터 조각(chunk)을 텍스트로 변환
+//       const chunk = decoder.decode(value, { stream: true });
+      
+//       // 여러 줄의 JSON이 섞여 들어올 수 있으므로 줄바꿈으로 분리
+//       const lines = chunk.split("\n");
+      
+//       for (const line of lines) {
+//         if (!line.trim()) continue;
+//         try {
+//           const json = JSON.parse(line);
+//           if (json.message && json.message.content) {
+//             // 메시지 조각을 하나로 합침
+//             resultText += json.message.content;
+//             // 실시간으로 화면에 출력 (타이핑 효과)
+//             out.textContent = resultText;
+//           }
+//         } catch (e) {
+//           console.error("JSON 파싱 에러:", e);
+//         }
+//       }
+//     }
+//   } catch (e) {
+//     out.textContent = "에러 발생: " + e;
+//   }
+// };
+</script>
+</body>
+</html>

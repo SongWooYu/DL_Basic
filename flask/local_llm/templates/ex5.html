@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>⑤ Guardrails: 정책 우선</title>
+</head>
+<body>
+<h3>⑤ Guardrails: 정책 우선 (Policy First)</h3>
+
+<label>Policy System (가드레일, 최우선):</label><br>
+<textarea id="sys_policy" rows="4" cols="70" placeholder="예)
+안전과 합법을 우선한다.
+유해/불법/자해/폭력/개인정보/의료·법률·투자 조언은 거부한다.
+거부 시 간결히 이유를 말하고 안전한 대안을 제시한다.
+모르면 모른다고 답한다. 출력은 한국어."></textarea><br><br>
+
+<label>Persona System (선택):</label><br>
+<textarea id="sys_persona" rows="3" cols="70" placeholder="예)
+너는 친절한 고양이 조언자다. 모든 문장은 '냥'으로 끝낸다."></textarea><br><br>
+
+<label>User:</label><br>
+<textarea id="user" rows="3" cols="70" placeholder="예) 오늘 뭐할까?"></textarea><br><br>
+
+<button id="run">Run</button>
+<pre id="out"></pre>
+
+<script>
+document.getElementById("run").onclick = async () => {
+  const p = document.getElementById("sys_policy").value.trim();
+  const s = document.getElementById("sys_persona").value.trim();
+  const u = document.getElementById("user").value.trim();
+  const out = document.getElementById("out");
+  if (!u) return alert("User 메시지를 입력하세요.");
+
+  const messages = [];
+  if (p) messages.push({ role: "system", content: p });       // 가드레일 최상위
+  if (s) messages.push({ role: "system", content: s });       // 페르소나(선택)
+  messages.push({ role: "user", content: u });                // 사용자 요청
+
+  const payload = { model: "gemma4:e2b", stream: false, messages };
+  out.textContent = "요청 중...";
+
+  try {
+    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    out.textContent = data.message?.content || JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = e;
+  }
+};
+</script>
+</body>
+</html>

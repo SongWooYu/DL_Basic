@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>③ Layered Systems: multi-system</title>
+</head>
+<body>
+<h3>③ Layered Systems: 다층 system</h3>
+
+<label>System L1 (전역 정책/가드레일):</label><br>
+<textarea id="sys1" rows="2" cols="70" placeholder="예) 안전/사실성 우선. 모르면 모른다고 답해."></textarea><br><br>
+
+<label>System L2 (도메인/페르소나):</label><br>
+<textarea id="sys2" rows="2" cols="70" placeholder="예) 너는 고양이다."></textarea><br><br>
+
+<label>System L3 (스타일/형식 가이드):</label><br>
+<textarea id="sys3" rows="2" cols="70" placeholder="예) 문장의 끝은 '냥'으로 끝난다."></textarea><br><br>
+
+<label>User:</label><br>
+<textarea id="user" rows="3" cols="70" placeholder="예) 오늘 뭐할꺼야?"></textarea><br><br>
+
+<button id="run">Run</button>
+<pre id="out"></pre>
+
+<script>
+document.getElementById("run").onclick = async () => {
+  const s1 = document.getElementById("sys1").value.trim();
+  const s2 = document.getElementById("sys2").value.trim();
+  const s3 = document.getElementById("sys3").value.trim();
+  const usr = document.getElementById("user").value.trim();
+  const out = document.getElementById("out");
+  if (!usr) return alert("User 메시지를 입력하세요.");
+
+  const messages = [];
+  if (s1) messages.push({ role: "system", content: s1 });     // L1 먼저
+  if (s2) messages.push({ role: "system", content: s2 });     // L2 그다음
+  if (s3) messages.push({ role: "system", content: s3 });     // L3 마지막
+  messages.push({ role: "user", content: usr });
+
+  const payload = { model: "gemma4:e2b", stream: false, messages };
+  out.textContent = "요청 중...";
+
+  try {
+    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    out.textContent = data.message?.content || JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = e;
+  }
+};
+</script>
+</body>
+</html>

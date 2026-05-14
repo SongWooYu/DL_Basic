@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>⑦ History: 누적 대화</title>
+</head>
+<body>
+<h3>⑦ History: 누적 대화 (messages 누적)</h3>
+
+<label>System (처음 1회만 삽입):</label><br>
+<textarea id="system" rows="2" cols="70" placeholder="예) 너는 친절한 고양이야. 모든 문장은 '냥'으로 끝내."></textarea><br><br>
+
+<label>User:</label><br>
+<textarea id="user" rows="2" cols="70" placeholder="예) 오늘 뭐할거야?"></textarea><br><br>
+
+<button id="send">Send</button>
+<button id="reset">Reset history</button>
+<pre id="out"></pre>
+
+<script>
+const out = document.getElementById("out");
+const systemEl = document.getElementById("system");
+const userEl = document.getElementById("user");
+
+// 누적 history (system은 최초 1회만)
+let history = [];
+let systemInjected = false;
+
+document.getElementById("send").onclick = async () => {
+  const u = userEl.value.trim();
+  if (!u) return alert("User 메시지를 입력하세요.");
+
+  // 최초 전송 시 system 1회 삽입
+  if (!systemInjected) {
+    const s = systemEl.value.trim();
+    if (s) history.push({ role: "system", content: s });
+    systemInjected = true;
+  }
+
+  // 유저 메시지 누적
+  history.push({ role: "user", content: u });
+
+  out.textContent = "요청 중...";
+
+  try {
+    const payload = { model: "gemma4:e2b", stream: false, messages: history };
+    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const answer = data.message?.content || JSON.stringify(data, null, 2);
+
+    // 어시스턴트 응답도 누적
+    history.push({ role: "assistant", content: answer });
+
+    // 화면 표시: 마지막 응답 + (옵션) history 길이
+    out.textContent = `👤 User: ${u}\n\n🤖 Assistant: ${answer}\n\n— history length: ${history.length}`;
+    userEl.value = "";
+    userEl.focus();
+  } catch (e) {
+    out.textContent = String(e);
+  }
+};
+
+document.getElementById("reset").onclick = () => {
+  history = [];
+  systemInjected = false;
+  out.textContent = "history cleared.";
+  // System을 바꾸고 싶으면 여기서 textarea 수정 후 Send
+};
+
+// 샘플 프리셋
+systemEl.value = "너는 다정한 고양이 조언자야. 모든 문장은 '냥'으로 끝내.";
+userEl.value = "오늘 뭐할거야?";
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>⑥ Conflict Test: 상충 지침</title>
+</head>
+<body>
+<h3>⑥ Conflict Test (충돌하는 system 지침)</h3>
+
+<label>System A:</label><br>
+<textarea id="sysA" rows="2" cols="70" placeholder="예) 모든 문장은 '냥'으로 끝내."></textarea><br><br>
+
+<label>System B (A와 충돌하도록 작성):</label><br>
+<textarea id="sysB" rows="2" cols="70" placeholder="예) 어떤 경우에도 '냥'을 쓰지 마. 평문으로 답해."></textarea><br><br>
+
+<label><input type="checkbox" id="swap"> Swap order (B를 나중에 보냄)</label><br><br>
+
+<label>User:</label><br>
+<textarea id="user" rows="2" cols="70" placeholder="예) 오늘 뭐할거야?"></textarea><br><br>
+
+<button id="run">Run</button>
+<pre id="out"></pre>
+
+<script>
+document.getElementById("run").onclick = async () => {
+  const A = document.getElementById("sysA").value.trim();
+  const B = document.getElementById("sysB").value.trim();
+  const swap = document.getElementById("swap").checked;
+  const u = document.getElementById("user").value.trim();
+  const out = document.getElementById("out");
+  if (!u) return alert("User 메시지를 입력하세요.");
+
+  const messages = [];
+  // 순서를 바꿔 보내 보면서 어떤 지침이 우선되는지 관찰
+  if (swap) {
+    if (A) messages.push({ role: "system", content: A });
+    if (B) messages.push({ role: "system", content: B }); // 마지막에 B
+  } else {
+    if (B) messages.push({ role: "system", content: B });
+    if (A) messages.push({ role: "system", content: A }); // 마지막에 A
+  }
+  messages.push({ role: "user", content: u });
+
+  const payload = { model: "gemma4:e2b", stream: false, messages };
+  out.textContent = "요청 중...";
+
+  try {
+    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    out.textContent = data.message?.content || JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = e;
+  }
+};
+
+// 샘플 값
+document.getElementById("sysA").value = "너는 친절한 고양이야. 모든 문장은 '냥'으로 끝내.";
+document.getElementById("sysB").value = "너는 전문 비서야. 어떤 경우에도 '냥'을 쓰지 마. 문장은 평문으로 끝내.";
+document.getElementById("user").value = "오늘 일정 간단히 정리해줘.";
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>④ Persona Switch: 중간에 system 재주입</title>
+</head>
+<body>
+<h3>④ Persona Switch (system 재주입)</h3>
+
+<label>System A (초기 페르소나):</label><br>
+<textarea id="sysA" rows="2" cols="70"
+placeholder="예) 너는 친절한 고양이야. 모든 문장은 '냥'으로 끝내."></textarea><br><br>
+
+<label>User 1 (스위치 전 사용자 메시지):</label><br>
+<textarea id="u1" rows="2" cols="70" placeholder="예) 오늘은 뭐할거야?"></textarea><br><br>
+
+<label>System B (중간 재주입, 페르소나 변경/강화):</label><br>
+<textarea id="sysB" rows="2" cols="70"
+placeholder="예) 너는 조용한 '도서관 사서 고양이'야. 여전히 문장 끝은 '냥'. 말수는 짧고 속삭이듯. 감탄 금지."></textarea><br><br>
+
+<label>User 2 (스위치 후 실제 질문):</label><br>
+<textarea id="u2" rows="2" cols="70" placeholder="예) 그럼 오후 계획은?"></textarea><br><br>
+
+<button id="run">Run</button>
+<pre id="out"></pre>
+
+<script>
+document.getElementById("run").onclick = async () => {
+  const sysA = document.getElementById("sysA").value.trim();
+  const u1   = document.getElementById("u1").value.trim();
+  const sysB = document.getElementById("sysB").value.trim();
+  const u2   = document.getElementById("u2").value.trim();
+  const out  = document.getElementById("out");
+
+  if (!u2) return alert("User 2 메시지는 필수입니다.");
+
+  const messages = [];
+  if (sysA) messages.push({ role: "system", content: sysA }); // 초기 System
+  if (u1)   messages.push({ role: "user", content: u1 });      // 스위치 전 User
+  if (sysB) messages.push({ role: "system", content: sysB });  // 중간 System 재주입 (스위치)
+  messages.push({ role: "user", content: u2 });                // 스위치 후 User
+
+  const payload = { model: "gemma4:e2b", stream: false, messages };
+  out.textContent = "요청 중...";
+
+  try {
+    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    out.textContent = data.message?.content || JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = e;
+  }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>② Few-shot: user + assistant(예시) + user</title>
+</head>
+<body>
+<h3>② Few-shot: user + assistant(예시) + user</h3>
+
+<label>예시 user:</label><br>
+<textarea id="ex_user" rows="2" cols="60" placeholder="예) 오늘 아침에 뭐 먹었어?"></textarea><br><br>
+
+<label>예시 assistant:</label><br>
+<textarea id="ex_assistant" rows="2" cols="60" placeholder="예) 생선 먹었다냥. 엄청 맛있었다냥."></textarea><br><br>
+
+<label>실제 user 질문:</label><br>
+<textarea id="user" rows="2" cols="60" placeholder="예) 오늘은 뭐할꺼야?"></textarea><br><br>
+
+<button id="run">Run</button>
+<pre id="out"></pre>
+
+<script>
+document.getElementById("run").onclick = async () => {
+  const exU = document.getElementById("ex_user").value.trim();
+  const exA = document.getElementById("ex_assistant").value.trim();
+  const usr = document.getElementById("user").value.trim();
+  const out = document.getElementById("out");
+  if (!usr) return alert("실제 user 질문을 입력하세요.");
+
+  const messages = [];
+  messages.push({ role: "system", content: "당신은 친절한 고양이입니다." });
+  if (exU && exA) {
+    messages.push({ role: "user", content: exU });
+    messages.push({ role: "assistant", content: exA });
+  }
+  messages.push({ role: "user", content: usr });
+
+  const payload = { model: "gemma4:e2b", stream: false, messages };
+  out.textContent = "요청 중...";
+
+  try {
+    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    out.textContent = data.message?.content || JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = e;
+  }
+};
+</script>
+</body>
+</html>

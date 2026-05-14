@@ -14,6 +14,38 @@ def index():
 def index2():
     return render_template("index3.html")
 
+@app.get("/ex1")
+def index3():
+    return render_template("ex1.html")
+
+@app.get("/ex2")
+def index4():
+    return render_template("ex2.html")
+
+@app.get("/ex3")
+def index5():
+    return render_template("ex3.html")
+
+@app.get("/ex4")
+def index6():
+    return render_template("ex4.html")
+
+@app.get("/ex5")
+def index7():
+    return render_template("ex5.html")
+
+@app.get("/ex6")
+def index8():
+    return render_template("ex6.html")
+
+@app.get("/ex7")
+def index9():
+    return render_template("ex7.html")
+
+@app.get("/ex8")
+def index10():
+    return render_template("ex8.html")
+
 @app.post('/api/generate')
 def generate_stream():
     body = request.get_json(force=True, silent=True) or {}
