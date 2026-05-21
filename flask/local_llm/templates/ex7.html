@@ -44,7 +44,7 @@ document.getElementById("send").onclick = async () => {
 
   try {
     const payload = { model: "gemma4:e2b", stream: false, messages: history };
-    const res = await fetch("http://127.0.0.1:11434/api/chat", {
+    const res = await fetch("http://192.168.24.184:11434/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)

@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>식인종-선교사 가이드</title>
+  <link rel="stylesheet" href="/static/index3.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Missionaries & Cannibals</p>
+        <h1>식인종-선교사 게임 가이드</h1>
+      </div>
+      <div class="top-actions">
+        <button class="ghost" id="reportBtn" type="button">보고서</button>
+        <button class="ghost primary-ghost" id="autoBtn" type="button">AI 자동 실행</button>
+        <button class="ghost" id="resetBtn" type="button">초기화</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel game-panel">
+        <div class="panel-head">
+          <div>
+            <h2>게임 상태</h2>
+            <p id="judgeText" class="subtext">현재 상태를 불러오는 중입니다.</p>
+          </div>
+          <span id="boatBadge" class="badge">배 위치</span>
+        </div>
+
+        <div class="river-scene">
+          <div id="gameOverlay" class="game-overlay hidden">게임오버</div>
+          <div class="bank" id="leftBank">
+            <div class="bank-title">왼쪽</div>
+            <div class="people-row">
+              <span class="label">선교사</span>
+              <div id="leftM" class="tokens"></div>
+            </div>
+            <div class="people-row">
+              <span class="label">식인종</span>
+              <div id="leftC" class="tokens"></div>
+            </div>
+          </div>
+
+          <div class="river">
+            <div class="river-line"></div>
+            <div id="boat" class="boat">⛵</div>
+            <div class="river-label">강</div>
+          </div>
+
+          <div class="bank" id="rightBank">
+            <div class="bank-title">오른쪽</div>
+            <div class="people-row">
+              <span class="label">선교사</span>
+              <div id="rightM" class="tokens"></div>
+            </div>
+            <div class="people-row">
+              <span class="label">식인종</span>
+              <div id="rightC" class="tokens"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="commands">
+          <div class="commands-title">Command 실행</div>
+          <div class="command-grid">
+            <button class="cmd" data-command="1M">1M</button>
+            <button class="cmd" data-command="2M">2M</button>
+            <button class="cmd" data-command="1C">1C</button>
+            <button class="cmd" data-command="2C">2C</button>
+            <button class="cmd" data-command="1M1C">1M1C</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel chat-panel">
+        <div class="panel-head">
+          <div>
+            <h2>가이드 채팅</h2>
+            <p class="subtext">게임 상태, 규칙, 다음 이동만 질문합니다.</p>
+          </div>
+        </div>
+
+        <div id="chatLog" class="chat-log"></div>
+
+        <div class="composer">
+          <textarea id="message" placeholder="예: 현재 상태에서 다음에 뭘 해야 해?"></textarea>
+          <button id="sendBtn" type="button">전송</button>
+        </div>
+        <p class="hint">Enter: 전송 / Shift+Enter: 줄바꿈</p>
+      </section>
+    </main>
+  </div>
+
+<script>
+const chatLog = document.getElementById('chatLog');
+const messageEl = document.getElementById('message');
+const sendBtn = document.getElementById('sendBtn');
+const resetBtn = document.getElementById('resetBtn');
+const autoBtn = document.getElementById('autoBtn');
+const reportBtn = document.getElementById('reportBtn');
+let gameFinished = false;
+
+function token(kind) {
+  const span = document.createElement('span');
+  span.className = 'token ' + kind;
+  span.textContent = kind === 'missionary' ? 'M' : 'C';
+  return span;
+}
+
+function setGameLocked(locked) {
+  gameFinished = locked;
+
+  document.querySelectorAll('.cmd').forEach(btn => {
+    btn.disabled = locked;
+  });
+
+  document.querySelectorAll('.suggest-run').forEach(btn => {
+    btn.disabled = locked;
+  });
+
+  sendBtn.disabled = locked;
+  messageEl.disabled = locked;
+
+  const overlay = document.getElementById('gameOverlay');
+
+  if (locked) {
+    overlay.classList.remove('hidden');
+  } else {
+    overlay.classList.add('hidden');
+  }
+}
+
+function setTokens(id, count, kind) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  for (let i = 0; i < count; i++) el.appendChild(token(kind));
+  if (count === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'empty';
+    empty.textContent = '없음';
+    el.appendChild(empty);
+  }
+}
+
+function renderStatus(status, message, finished, finishedMessage, meta) {
+  setTokens('leftM', status.left_m, 'missionary');
+  setTokens('leftC', status.left_c, 'cannibal');
+  setTokens('rightM', status.right_m, 'missionary');
+  setTokens('rightC', status.right_c, 'cannibal');
+
+  const boat = document.getElementById('boat');
+  boat.className = 'boat ' + (status.boat === 'left' ? 'boat-left' : 'boat-right');
+
+  document.getElementById('boatBadge').textContent =
+    status.boat === 'left' ? '배: 왼쪽' : '배: 오른쪽';
+
+  document.getElementById('judgeText').textContent =
+    message || finishedMessage || 'Command를 선택하거나 가이드에게 질문하십시오.';
+
+  const overlay = document.getElementById('gameOverlay');
+
+  if (finished) {
+    overlay.textContent = (finishedMessage || message || '').includes('승리') ? '승리' : '게임오버';
+    setGameLocked(true);
+  } else {
+    overlay.textContent = '게임오버';
+    setGameLocked(false);
+  }
+}
+function appendMessage(role, text, extraHtml) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.textContent = text || '';
+  wrap.appendChild(body);
+
+  if (extraHtml) {
+    const extra = document.createElement('div');
+    extra.className = 'msg-extra';
+    extra.innerHTML = extraHtml;
+    wrap.appendChild(extra);
+  }
+
+  chatLog.appendChild(wrap);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function commandCard(command) {
+  return `
+    <div class="suggest-card">
+      <div>
+        <div class="suggest-title">추천 Command</div>
+        <strong>${command}</strong>
+      </div>
+      <button class="suggest-run" data-command="${command}" type="button">실행</button>
+    </div>
+  `;
+}
+
+function findSuggestedCommand(text) {
+  if (!text) return null;
+  const matches = text.match(/\b(1M1C|1M|2M|1C|2C)\b/g);
+  if (!matches || matches.length === 0) return null;
+  return matches[0];
+}
+
+async function loadStatus() {
+  const res = await fetch('/api/status');
+  const data = await res.json();
+
+  renderStatus(
+    data.status || data,
+    data.message,
+    data.game_finished,
+    data.game_finished_message,
+    data
+  );
+}
+async function loadHistory() {
+  const res = await fetch('/api/history');
+  const data = await res.json();
+  chatLog.innerHTML = '';
+  const list = data.history || [];
+  for (const item of list) {
+    if (item.role === 'system') continue;
+    appendMessage(item.role, item.content);
+  }
+}
+
+async function runCommand(command) {
+  if (gameFinished) return;
+
+  const res = await fetch('/api/move', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ command })
+  });
+
+  const data = await res.json();
+
+  appendMessage('system', `Command 실행: ${command}\n${data.message || ''}`);
+
+  renderStatus(
+    data.status,
+    data.message,
+    data.game_finished,
+    data.game_finished_message,
+    data
+  );
+}
+
+async function askGuide() {
+  if (gameFinished) return;
+
+  const text = messageEl.value.trim();
+  if (!text) return;
+
+  messageEl.value = '';
+  appendMessage('user', text);
+  sendBtn.disabled = true;
+  sendBtn.textContent = '응답 중';
+
+  try {
+    const res = await fetch('/api/guide', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    const answer = data.answer || data.message || '응답이 없습니다.';
+    const suggested = data.command || null;
+    appendMessage('assistant', answer, suggested ? commandCard(suggested) : '');
+    if (data.status) {
+      renderStatus(
+        data.status,
+        data.status_message,
+        data.game_finished,
+        data.game_finished_message,
+        data
+      );
+    }
+  } catch (e) {
+    appendMessage('assistant', '오류가 발생했습니다. main.py의 API 라우터를 확인해 주세요.');
+  } finally {
+    sendBtn.textContent = '전송';
+    if (!gameFinished) sendBtn.disabled = false;
+  }
+}
+
+async function resetGame() {
+  const res = await fetch('/api/reset', { method: 'POST' });
+  const data = await res.json();
+
+  chatLog.innerHTML = '';
+  appendMessage('system', data.message || '초기화했습니다.');
+
+  renderStatus(
+    data.status,
+    data.message,
+    data.game_finished,
+    data.game_finished_message,
+    data
+  );
+}
+
+async function autoRunGame() {
+  if (gameFinished) return;
+
+  autoBtn.disabled = true;
+  autoBtn.textContent = '자동 실행 중';
+  appendMessage('system', 'AI 자동 실행을 시작합니다. 한 번에 전체를 처리하지 않고, 1턴씩 서버에 요청해 진행 상황을 화면에 표시합니다.');
+
+  const maxSteps = 40;
+
+  try {
+    for (let step = 1; step <= maxSteps; step++) {
+      appendMessage('system', `자동 실행 ${step}턴 요청 중...`);
+
+      const res = await fetch('/api/auto-step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step })
+      });
+      const data = await res.json();
+
+      if (data.answer) {
+        appendMessage('assistant', `[AI 판단]
+${data.answer}`);
+      }
+
+      const cmdLine = data.command ? `Command: ${data.command}
+` : '';
+      appendMessage('system', `${cmdLine}${data.message || '응답 메시지가 없습니다.'}`);
+
+      renderStatus(
+        data.status,
+        data.message,
+        data.game_finished,
+        data.game_finished_message,
+        data
+      );
+
+      if (data.done || data.game_finished || !data.moved) {
+        appendMessage('assistant', data.report || data.message || '자동 실행이 종료되었습니다.');
+        break;
+      }
+
+      // UI가 멈춘 것처럼 보이지 않도록 짧게 양보한다.
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
+  } catch (e) {
+    appendMessage('assistant', '자동 실행 중 오류가 발생했습니다. /api/auto-step 라우터와 Ollama 응답 시간을 확인해 주세요.');
+  } finally {
+    autoBtn.textContent = 'AI 자동 실행';
+    if (!gameFinished) autoBtn.disabled = false;
+  }
+}
+
+async function loadReport() {
+  const res = await fetch('/api/report');
+  const data = await res.json();
+  appendMessage('assistant', data.report || '보고서가 없습니다.');
+}
+
+document.querySelectorAll('.cmd').forEach(btn => {
+  btn.addEventListener('click', () => runCommand(btn.dataset.command));
+});
+
+chatLog.addEventListener('click', e => {
+  if (e.target.classList.contains('suggest-run')) {
+    runCommand(e.target.dataset.command);
+  }
+});
+
+sendBtn.addEventListener('click', askGuide);
+resetBtn.addEventListener('click', resetGame);
+autoBtn.addEventListener('click', autoRunGame);
+reportBtn.addEventListener('click', loadReport);
+
+messageEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    askGuide();
+  }
+});
+
+loadStatus();
+loadHistory();
+</script>
+</body>
+</html>
