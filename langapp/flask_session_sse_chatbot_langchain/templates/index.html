@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flask Session Memory ChatBot - LangChain</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="header">
+      <div>
+        <p class="eyebrow">LLM / Flask / LangChain / SSE</p>
+        <h1>Flask 세션별 메모리를 적용한 ChatBot</h1>
+      </div>
+      <button id="resetBtn" type="button">이전 대화 삭제</button>
+    </header>
+
+    <section class="info">
+      <div><strong>Model</strong>: {{ model }}</div>
+      <div><strong>Ollama</strong>: {{ base_url }}</div>
+      <ol>
+        <li>Cookie의 <code>sid</code>로 브라우저 재접속 후 세션을 복구합니다.</li>
+        <li>Flask 서버 메모리에 세션별 대화 이력을 저장합니다.</li>
+        <li>LangChain <code>ChatOllama</code>로 Ollama 모델을 호출합니다.</li>
+        <li>SSE로 AI 응답을 실시간 스트리밍 표시합니다.</li>
+      </ol>
+    </section>
+
+    <section id="chat" class="chat"></section>
+
+    <form id="chatForm" class="composer">
+      <textarea id="message" placeholder="메시지를 입력하세요. 예: 이전에 내가 말한 내용을 기억하고 있어?" rows="3"></textarea>
+      <button id="sendBtn" type="submit">전송</button>
+    </form>
+  </main>
+
+<script>
+const chat = document.getElementById('chat');
+const form = document.getElementById('chatForm');
+const messageEl = document.getElementById('message');
+const sendBtn = document.getElementById('sendBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+function bubble(role, text = '') {
+  const item = document.createElement('div');
+  item.className = `bubble ${role}`;
+  item.textContent = text;
+  chat.appendChild(item);
+  chat.scrollTop = chat.scrollHeight;
+  return item;
+}
+
+async function loadHistory() {
+  const res = await fetch('/api/history');
+  const data = await res.json();
+  chat.innerHTML = '';
+  for (const item of data.history || []) {
+    bubble(item.role, item.content);
+  }
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = messageEl.value.trim();
+  if (!text) return;
+
+  messageEl.value = '';
+  bubble('user', text);
+  const assistantBubble = bubble('assistant', '');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '응답 중';
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+
+      for (const raw of events) {
+        const lines = raw.split('\n');
+        const eventLine = lines.find(line => line.startsWith('event:'));
+        const dataLine = lines.find(line => line.startsWith('data:'));
+        if (!eventLine || !dataLine) continue;
+
+        const eventName = eventLine.replace('event:', '').trim();
+        const data = JSON.parse(dataLine.replace('data:', '').trim());
+
+        if (eventName === 'token') {
+          assistantBubble.textContent += data.token;
+          chat.scrollTop = chat.scrollHeight;
+        } else if (eventName === 'error') {
+          assistantBubble.textContent += `\n[오류] ${data.message}`;
+        }
+      }
+    }
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = '전송';
+  }
+});
+
+resetBtn.addEventListener('click', async () => {
+  await fetch('/api/reset', { method: 'POST' });
+  chat.innerHTML = '';
+  bubble('system', '이전 대화를 삭제했습니다.');
+});
+
+loadHistory();
+</script>
+</body>
+</html>
